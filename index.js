@@ -1,6 +1,6 @@
-const puppeteer = require('puppeteer');
 const express = require('express');
 const chromium = require('chrome-aws-lambda');
+const puppeteer = require('puppeteer'); // Fallback for local environments
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -9,14 +9,14 @@ app.get('/scrape', async (req, res) => {
   const url = 'https://finance.yahoo.com/topic/latest-news/';
 
   try {
-    // Use chrome-aws-lambda or fallback to local puppeteer
+    // Use chrome-aws-lambda for Render, fall back to local puppeteer if necessary
     const executablePath = await chromium.executablePath || puppeteer.executablePath();
 
     const browser = await (executablePath ? chromium.puppeteer : puppeteer).launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
+      args: chromium.args || [],
+      defaultViewport: chromium.defaultViewport || null,
       executablePath,
-      headless: chromium.headless,
+      headless: true,
     });
 
     const page = await browser.newPage();
