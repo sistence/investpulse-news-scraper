@@ -1,3 +1,4 @@
+const puppeteer = require('puppeteer');
 const express = require('express');
 const chromium = require('chrome-aws-lambda');
 
@@ -8,11 +9,13 @@ app.get('/scrape', async (req, res) => {
   const url = 'https://finance.yahoo.com/topic/latest-news/';
 
   try {
-    // Launch a headless browser using chrome-aws-lambda in the serverless environment
-    const browser = await chromium.puppeteer.launch({
+    // Use chrome-aws-lambda or fallback to local puppeteer
+    const executablePath = await chromium.executablePath || puppeteer.executablePath();
+
+    const browser = await (executablePath ? chromium.puppeteer : puppeteer).launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
+      executablePath,
       headless: chromium.headless,
     });
 
