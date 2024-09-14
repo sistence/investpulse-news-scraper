@@ -8,7 +8,7 @@ app.get('/scrape', async (req, res) => {
   const url = 'https://finance.yahoo.com/topic/latest-news/';
 
   try {
-    // Launch Puppeteer with the default configuration from chrome-aws-lambda
+    // Launch a headless browser using chrome-aws-lambda in the serverless environment
     const browser = await chromium.puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
@@ -19,19 +19,10 @@ app.get('/scrape', async (req, res) => {
     const page = await browser.newPage();
     await page.goto(url, { waitUntil: 'networkidle2' });
 
-    // Wait for the content to load
     await page.waitForSelector('li.js-stream-content');
+    await page.evaluate(() => window.scrollBy(0, 2000));
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 2000)));
 
-    // Scroll the page
-    await page.evaluate(() => {
-      window.scrollBy(0, 2000);
-    });
-
-    await page.evaluate(
-      () => new Promise((resolve) => setTimeout(resolve, 2000))
-    );
-
-    // Fetch current date
     const currentDate = new Date();
     const formattedDate = currentDate.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -39,39 +30,32 @@ app.get('/scrape', async (req, res) => {
       day: 'numeric',
     });
 
-    // Extract news data
     const newsItems = await page.evaluate(() => {
-      const articles = Array.from(
-        document.querySelectorAll('li.js-stream-content')
-      );
-      return articles
-        .map((article) => {
-          const titleElement = article.querySelector('h3 a');
-          const linkElement = article.querySelector('h3 a');
-          const summaryElement = article.querySelector('p');
-          const imageElement = article.querySelector('img');
-          const sourceElement = article.querySelector('span');
+      const articles = Array.from(document.querySelectorAll('li.js-stream-content'));
+      return articles.map((article) => {
+        const titleElement = article.querySelector('h3 a');
+        const linkElement = article.querySelector('h3 a');
+        const summaryElement = article.querySelector('p');
+        const imageElement = article.querySelector('img');
+        const sourceElement = article.querySelector('span');
 
-          if (!titleElement || !summaryElement || !imageElement || !sourceElement) {
-            return null;
-          }
+        if (!titleElement || !summaryElement || !imageElement || !sourceElement) {
+          return null;
+        }
 
-          let imageUrl = imageElement.getAttribute('src');
-          if (imageUrl.includes('spaceball.gif')) {
-            imageUrl =
-              imageElement.getAttribute('data-src') ||
-              imageElement.getAttribute('srcset');
-          }
+        let imageUrl = imageElement.getAttribute('src');
+        if (imageUrl.includes('spaceball.gif')) {
+          imageUrl = imageElement.getAttribute('data-src') || imageElement.getAttribute('srcset');
+        }
 
-          return {
-            title: titleElement?.textContent.trim(),
-            link: linkElement?.getAttribute('href'),
-            description: summaryElement?.textContent.trim(),
-            imageUrl,
-            source: sourceElement?.textContent.trim(),
-          };
-        })
-        .filter((item) => item !== null);
+        return {
+          title: titleElement?.textContent.trim(),
+          link: linkElement?.getAttribute('href'),
+          description: summaryElement?.textContent.trim(),
+          imageUrl,
+          source: sourceElement?.textContent.trim(),
+        };
+      }).filter((item) => item !== null);
     });
 
     const enrichedNewsItems = newsItems.map((item) => ({
