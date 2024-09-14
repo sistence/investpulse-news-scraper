@@ -1,0 +1,17 @@
+{
+  "name": "puppeteer-scraping-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.0",
+    "puppeteer": "^23.3.0"
+  }
+}
